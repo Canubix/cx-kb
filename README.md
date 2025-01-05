@@ -1,8 +1,5 @@
 # cx-kb (Openbox Keybinds Extractor)
 
----
-
-## Program Description
 
 **cx-kb** is a program designed to extract and display a list of keybindings from the Openbox configuration file (`rc.xml`). The program allows you to:
 
@@ -21,7 +18,30 @@
      - `user-kbinds.txt` — only user commands.
    - Display results in the terminal or a graphical window (using the `yad` utility).
 
-4. **Command-Line Arguments:**
+
+
+## Installation
+
+1. **Clone the Repository:**  
+   Run the command:  
+   `git clone https://github.com/Canubix/cx-kb.git`  
+   Navigate to the project directory:  
+   `cd cx-kb`
+
+2. **Make the Script Executable:**  
+   Make the script executable:  
+   `chmod +x cx-kb`
+
+3. **Install Dependencies:**  
+   - Ensure `python3` is installed.  
+   - Install `lxml` for XML parsing (optional, falls back to `xml.etree.ElementTree` if `lxml` is not available):  
+     `pip install lxml`  
+   - Install `yad` for graphical output (optional):  
+     `sudo apt install yad`
+
+ 
+
+## Command-Line Arguments
    - The program supports multiple arguments for customizing output, including:
      - `-o, --ob`: Output only Openbox keybindings (built-in actions).
      - `-u, --user`: Output only user-defined commands (`Execute` actions).
@@ -33,8 +53,8 @@
      - `-g, --gui`: Display results in a graphical window using `yad`.
      - `-x, --txt`: Save results to text files without displaying them in the terminal.
      - `-n, --newline`: Add an empty line after each command for better readability.
+    
 
----
 
 ## Usage Examples
 
