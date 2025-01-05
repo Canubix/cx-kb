@@ -90,4 +90,4 @@ Program designed to extract and display a list of keybindings from the Openbox c
 **Author:** Andrei Talchkou  
 **Email:** majesticzero78@gmail.com  
 **GitHub:** [https://github.com/Canubix/cx-kb](https://github.com/Canubix/cx-kb)  
-**License:** MIT  
+**License:**  GNU
