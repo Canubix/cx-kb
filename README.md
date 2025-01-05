@@ -1,7 +1,7 @@
-# cx-kb (Openbox Keybinds Extractor)
+# Openbox Keybinds Extractor
 
 
-**cx-kb** is a program designed to extract and display a list of keybindings from the Openbox configuration file (`rc.xml`). The program allows you to:
+program designed to extract and display a list of keybindings from the Openbox configuration file (`rc.xml`). The program allows you to:
 
 1. **Extract Keybindings:**
    - Assigned to execute commands (`Execute`).
@@ -58,9 +58,6 @@
 
 ## Usage Examples
 
-0. **Display all keybindings in the terminal:**
-   ./cx-kb
-**Here is the numbered list of all commands:**
 
 1. `./cx-kb --ob -t "★" -t2 "||"`  
    - Display only Openbox keybindings with custom symbols "★" and "||".
