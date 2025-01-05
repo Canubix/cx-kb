@@ -1,0 +1,210 @@
+#!/usr/bin/env python3
+"""
+  ************************************************
+  *  Program: cx-kb (Openbox Keybinds Extractor) *
+  *  Version: 1.0                                *
+  *  Author: Andrei Talchkou                     *
+  *  Email: majesticzero78@gmail.com             *
+  *  GitHub: https://github.com/Canubix/cx-kb    *
+  *  License: GNU                                *
+  ************************************************
+
+This program is designed to process and display a list of keybinds from the Openbox configuration file (rc.xml). It allows:
+
+1. Extracting keybinds:
+   - Assigned to execute commands (Execute).
+   - Built-in Openbox actions (e.g., window management).
+
+2. Formatting output:
+   - In a convenient format, including the option to display in two columns.
+   - Replacing default symbols (e.g., ⚫ or |) and key names (e.g., W → Win, A → Alt) with custom ones.
+
+3. Saving results:
+   - To text files:
+     - kbinds.txt — all keybinds.
+     - ob-kbinds.txt — only Openbox keybinds.
+     - user-kbinds.txt — only user commands.
+   - Displaying results in the terminal or a graphical window (using the yad utility).
+
+4. Command-line arguments:
+   - The program supports multiple arguments for customizing output, including:
+       - -o, --ob: Output only Openbox keybinds (built-in actions).
+       - -u, --user: Output only user-defined commands (Execute actions).
+       - -t, --symbol: Replace the default symbol (⚫) with a custom symbol.
+       - -t2, --symbol2: Replace the default symbol (|) with a custom symbol for two-column output.
+       - -c, --columns: Display output in two columns.
+       - -s, --shorten: Shorten paths in commands by removing everything up to the last '/'.
+       - -m, --modify: Modify key names (e.g., W → Win, A → Alt, C → Ctl, S → Sht).
+       - -g, --gui: Display results in a graphical window using yad.
+       - -x, --txt: Save results to text files without displaying them in the terminal.
+       - -n, --newline: Add an empty line after each command for better readability.
+
+Example usage:
+1. Display all keybinds in the terminal:
+   ./cx-kb
+2. Display only Openbox keybinds with custom symbols:
+   ./cx-kb --ob -t "★" -t2 "||"
+3. Save user commands to a file:
+   ./cx-kb --user --txt
+4. Display results in a graphical window:
+   ./cx-kb --gui
+5. Display keybinds in two columns with shortened paths:
+   ./cx-kb -c2 -s
+6. Modify key names (e.g., W → Win, A → Alt) and display in terminal:
+   ./cx-kb -m
+7. Replace default symbols and save Openbox keybinds to a file:
+   ./cx-kb --ob -t "●" -t2 "│" --txt
+8. Display user commands with custom symbols and add newlines after each command:
+   ./cx-kb --user -t "➜" -n
+9. Display Openbox keybinds with graphical symbols in two columns:
+   ./cx-kb --ob -t "◆" -t2 "║" -c2
+10. Save all keybinds to a file with modified key names and shortened paths:
+    ./cx-kb -m -s --txt
+
+
+"""
+
+##################################################################################
+
+import sys
+import os
+import subprocess
+import argparse
+
+try:
+    from lxml import etree
+except ImportError:
+    import xml.etree.ElementTree as etree
+
+rc_fpath = os.path.join(os.environ["HOME"], ".config/openbox/rc.xml")
+kb_fpath = os.path.join(os.environ["HOME"], ".config/openbox/kbinds.txt")
+user_kb_fpath = os.path.join(os.environ["HOME"], ".config/openbox/user-kbinds.txt")
+ob_kb_fpath = os.path.join(os.environ["HOME"], ".config/openbox/ob-kbinds.txt")
+arrShortcut = []
+
+def cmdargs():
+    parser = argparse.ArgumentParser(description="Process keybinds.")
+    parser.add_argument("-o", "--ob", action="store_true", help="Output Openbox keybinds only")
+    parser.add_argument("-u", "--user", action="store_true", help="Output user commands only")
+    parser.add_argument("-m", "--modify", action="store_true", help="Modify key names (W -> Win, A -> Alt, C -> Ctl, S -> Sht)")
+    parser.add_argument("-t", "--symbol", type=str, metavar="", help="Replace the default symbol ' ⚫ ' with the specified symbol")
+    parser.add_argument("-t2", "--symbol2", type=str, metavar="", help="Replace the default symbol for two columns ' | ' with the specified symbol")
+    parser.add_argument("-c", "--columns", action="store_true", help="Output in two columns")
+    parser.add_argument("-s", "--shorten", action="store_true", help="Shorten paths by removing everything up to the last '/'")
+    parser.add_argument("-g", "--gui", action="store_true", help="Use Yad to display output in a graphical window")
+    parser.add_argument("-x", "--txt", action="store_true", help="Only generate text files without output to terminal or GUI")
+    parser.add_argument("-n", "--newline", action="store_true", help="Add an empty line after each command")
+    return parser.parse_args()
+
+def keyboard():
+    strRoot = "{http://openbox.org/3.4/rc}"
+    tree = etree.parse(rc_fpath)
+    root = tree.getroot()
+    for k in root.findall(f"{strRoot}keyboard/{strRoot}keybind"):
+        key = k.get("key")
+        action_element = k.find(f"{strRoot}action")
+        strTxt = ""
+        strType = "o "
+        if action_element is not None:
+            if action_element.get("name") == "Execute":
+                strType = "x "
+                for element in action_element:
+                    if element.text:
+                        strTxt = element.text
+                        break
+            elif action_element.get("name") == "ShowMenu":
+                menu_element = action_element.find(f"{strRoot}menu")
+                if menu_element is not None:
+                    strTxt = menu_element.text
+            else:
+                action_name = action_element.get("name")
+                if action_name is not None:
+                    strTxt = action_name
+            arrShortcut.append((strType, key, strTxt))
+
+def format_commands(commands, replace_symbol, replace_symbol_two_columns, two_columns, max_length_key, max_length_command, fpath, add_newline):
+    output = ""
+    if two_columns:
+        half = (len(commands) + 1) // 2
+        first_column = commands[:half]
+        second_column = commands[half:]
+        for i in range(len(first_column)):
+            key1, command1 = first_column[i].split("\t")
+            key1 = key1.replace("o ", replace_symbol).replace("x ", replace_symbol)
+            if i < len(second_column):
+                key2, command2 = second_column[i].split("\t")
+                key2 = key2.replace("o ", replace_symbol).replace("x ", replace_symbol)
+                output_line = f"{key1:<{max_length_key}}{command1:<{max_length_command}}{replace_symbol_two_columns}{key2:<{max_length_key}}{command2}"
+            else:
+                output_line = f"{key1:<{max_length_key}}{command1:<{max_length_command}}"
+            write_file(output_line, fpath, add_newline=add_newline)
+            output += output_line + ("\n\n" if add_newline else "\n")
+    else:
+        for line in commands:
+            key, command = line.split("\t")
+            key = key.replace("o ", replace_symbol).replace("x ", replace_symbol)
+            output_line = f"{key:<{max_length_key}}{command:<{max_length_command}}"
+            write_file(output_line, fpath, add_newline=add_newline)
+            output += output_line + ("\n\n" if add_newline else "\n")
+    return output
+
+def output_keybinds(arrShortcut, args):
+    openbox_commands = []
+    execute_commands = []
+    for exe, keybinding, execute in arrShortcut:
+        if args.modify:
+            keybinding = keybinding.replace("W", "Win").replace("A", "Alt").replace("C", "Ctl").replace("S", "Sht")
+        if args.shorten and "/" in execute:
+            execute = "../" + execute.split("/")[-1]
+        line = f"{exe}{keybinding:<10}\t{execute}"
+        openbox_commands.append(line) if exe == "o " else execute_commands.append(line)
+
+    max_length_key = max(len(line.split("\t")[0]) for line in openbox_commands + execute_commands) + 5
+    max_length_command = max(len(line.split("\t")[1]) for line in openbox_commands + execute_commands) + 5
+
+    output = ""
+    if args.ob:
+        output += "Openbox Keybinds\n\n"
+        write_file("Openbox Keybinds\n\n", ob_kb_fpath, mode='w', add_newline=args.newline)
+        output += format_commands(openbox_commands, args.symbol or " ⚫ ", args.symbol2 or "", args.columns, max_length_key, max_length_command, ob_kb_fpath, args.newline)
+    elif args.user:
+        output += "User Commands\n\n"
+        write_file("User Commands\n\n", user_kb_fpath, mode='w', add_newline=args.newline)
+        output += format_commands(execute_commands, args.symbol or " ⚫ ", args.symbol2 or "", args.columns, max_length_key, max_length_command, user_kb_fpath, args.newline)
+    else:
+        output += "Openbox Keybinds\n\n"
+        write_file("Openbox Keybinds\n\n", kb_fpath, mode='w', add_newline=args.newline)
+        output += format_commands(openbox_commands, args.symbol or " ⚫ ", args.symbol2 or "", args.columns, max_length_key, max_length_command, kb_fpath, args.newline)
+        output += "\nUser Commands\n\n"
+        write_file("\nUser Commands\n\n", kb_fpath, add_newline=args.newline)
+        output += format_commands(execute_commands, args.symbol or " ⚫ ", args.symbol2 or "", args.columns, max_length_key, max_length_command, kb_fpath, args.newline)
+
+    if not args.txt:
+        if args.gui:
+            subprocess.run(["yad", "--text-info", "--title=Keybinds", "--width=800", "--height=600"], input=output.encode())
+        else:
+            print(output)
+
+def check_file(fpath, mode):
+    try:
+        with open(fpath, mode) as f:
+            pass
+        return True
+    except IOError:
+        return False
+
+def write_file(line, fpath, mode='a', add_newline=False):
+    with open(fpath, mode) as f:
+        f.write(line)
+        if not line.endswith("\n"):
+            f.write("\n")
+        if add_newline:
+            f.write("\n")
+
+if __name__ == "__main__":
+    args = cmdargs()
+    if not check_file(rc_fpath, "r"):
+        print(f"\nCan't open rc.xml for parsing\nCheck the filepath given: {rc_fpath}\n")
+        sys.exit(1)
+    keyboard()
+    output_keybinds(arrShortcut, args)
