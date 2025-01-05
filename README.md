@@ -1,7 +1,7 @@
 # Openbox Keybinds Extractor
 
 
-program designed to extract and display a list of keybindings from the Openbox configuration file (`rc.xml`). The program allows you to:
+Program designed to extract and display a list of keybindings from the Openbox configuration file (`rc.xml`). The program allows you to:
 
 1. **Extract Keybindings:**
    - Assigned to execute commands (`Execute`).
